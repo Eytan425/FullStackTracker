@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FSO Tracker — Eytan</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #18181f;
+    --border: #2a2a38;
+    --accent: #7c6dfa;
+    --accent2: #fa6d7c;
+    --green: #4ade80;
+    --yellow: #facc15;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --card-hover: #1e1e2a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,109,250,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,109,250,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    margin-bottom: 48px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 4px 10px;
+    border-radius: 2px;
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 6vw, 56px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+
+  h1 span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 480px;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  /* Progress */
+  .progress-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 40px;
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .progress-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  .progress-pct {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .progress-track {
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+    width: 0%;
+  }
+
+  /* Section headers */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    margin-top: 40px;
+  }
+
+  .section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+  }
+
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .badge-must {
+    background: rgba(74,222,128,0.12);
+    color: var(--green);
+    border: 1px solid rgba(74,222,128,0.25);
+  }
+
+  .badge-later {
+    background: rgba(250,204,21,0.1);
+    color: var(--yellow);
+    border: 1px solid rgba(250,204,21,0.2);
+  }
+
+  /* Part cards */
+  .parts-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .part-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  .part-card:hover {
+    background: var(--card-hover);
+    border-color: #3a3a50;
+  }
+
+  .part-card.done {
+    border-color: rgba(74,222,128,0.3);
+  }
+
+  .part-card.done .part-number {
+    background: rgba(74,222,128,0.15);
+    color: var(--green);
+  }
+
+  .part-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+  }
+
+  .checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .part-card.done .checkbox {
+    background: var(--green);
+    border-color: var(--green);
+  }
+
+  .checkmark {
+    display: none;
+    width: 10px;
+    height: 7px;
+  }
+
+  .part-card.done .checkmark {
+    display: block;
+  }
+
+  .part-number {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--surface2);
+    color: var(--muted);
+    padding: 4px 8px;
+    border-radius: 4px;
+    min-width: 52px;
+    text-align: center;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .part-info {
+    flex: 1;
+  }
+
+  .part-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .part-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .part-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .hours-tag {
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* Notes section inside card */
+  .part-notes {
+    border-top: 1px solid var(--border);
+    padding: 12px 20px 12px calc(20px + 20px + 52px + 32px);
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+    display: none;
+  }
+
+  .part-notes.show {
+    display: block;
+  }
+
+  .note-keyword {
+    color: var(--accent);
+  }
+
+  /* Estimate box */
+  .estimate-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-top: 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .estimate-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    margin-bottom: 12px;
+    grid-column: 1 / -1;
+  }
+
+  .estimate-item {
+    border-left: 2px solid var(--border);
+    padding-left: 16px;
+  }
+
+  .estimate-item.highlight {
+    border-color: var(--accent);
+  }
+
+  .estimate-scope {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .estimate-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+  }
+
+  .estimate-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .container > * {
+    animation: fadeIn 0.5s ease both;
+  }
+
+  .container > *:nth-child(1) { animation-delay: 0s; }
+  .container > *:nth-child(2) { animation-delay: 0.07s; }
+  .container > *:nth-child(3) { animation-delay: 0.14s; }
+  .container > *:nth-child(4) { animation-delay: 0.21s; }
+
+  @media (max-width: 600px) {
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    .estimate-box { grid-template-columns: 1fr; }
+    .part-notes { padding-left: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="tag">University of Helsinki</div>
+    <h1>Full Stack Open<br><span>Course Tracker</span></h1>
+    <p class="subtitle">14 parts · ~210–280 hrs total · Track what you need, skip what you don't.</p>
+  </header>
+
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-value" id="stat-done">0</div>
+      <div class="stat-label">Parts Done</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-must">7</div>
+      <div class="stat-label">Must-Know Parts</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-hrs">0h</div>
+      <div class="stat-label">Est. Hours Done</div>
+    </div>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-header">
+      <div class="progress-title">Overall Progress</div>
+      <div class="progress-pct" id="progress-pct">0%</div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <!-- Must Know -->
+  <div class="section-header">
+    <div class="section-label">Must Know for the Job</div>
+    <div class="section-line"></div>
+    <span class="badge badge-must">Essential</span>
+  </div>
+
+  <div class="parts-grid" id="must-grid"></div>
+
+  <!-- Learn Later -->
+  <div class="section-header">
+    <div class="section-label">Can Learn On The Job</div>
+    <div class="section-line"></div>
+    <span class="badge badge-later">Optional</span>
+  </div>
+
+  <div class="parts-grid" id="later-grid"></div>
+
+  <!-- Time Estimate -->
+  <div class="estimate-box">
+    <div class="estimate-title">Your Time Estimate · 5–6 hrs/week</div>
+    <div class="estimate-item highlight">
+      <div class="estimate-scope">Must-Know Parts (0–5 + 9)</div>
+      <div class="estimate-value">4–6 months</div>
+      <div class="estimate-sub">~110–140 hrs total</div>
+    </div>
+    <div class="estimate-item">
+      <div class="estimate-scope">Full Course (Parts 0–13)</div>
+      <div class="estimate-value">8–12 months</div>
+      <div class="estimate-sub">~210–280 hrs total</div>
+    </div>
+    <div class="estimate-item">
+      <div class="estimate-scope">Your Advantage</div>
+      <div class="estimate-value">Faster 🚀</div>
+      <div class="estimate-sub">Node/Express/MongoDB already familiar</div>
+    </div>
+    <div class="estimate-item">
+      <div class="estimate-scope">Pace per part</div>
+      <div class="estimate-value">2–4 weeks</div>
+      <div class="estimate-sub">15–20 hrs per part avg</div>
+    </div>
+  </div>
+
+  <footer>Made for Eytan · Full Stack Open 2023 · Click any part to see notes</footer>
+
+</div>
+
+<script>
+const parts = [
+  {
+    num: "Part 0",
+    title: "Fundamentals of Web Apps",
+    desc: "HTTP, HTML, CSS, how browsers work, developer tools",
+    hours: "5–8h",
+    must: true,
+    note: `Covers how the web actually works — <span class="note-keyword">HTTP requests</span>, the browser lifecycle, and the basics you need before touching any code. Quick read, mostly theory.`
+  },
+  {
+    num: "Part 1",
+    title: "Introduction to React",
+    desc: "Components, props, state, event handlers, hooks",
+    hours: "15–20h",
+    must: true,
+    note: `Core React concepts: <span class="note-keyword">useState</span>, <span class="note-keyword">useEffect</span>, JSX, component structure. This is where React actually starts — essential for any frontend work.`
+  },
+  {
+    num: "Part 2",
+    title: "Communicating with Server",
+    desc: "Fetching data, REST, forms, axios",
+    hours: "15–20h",
+    must: true,
+    note: `How React apps talk to a backend. <span class="note-keyword">axios</span>, REST APIs, rendering lists, handling forms. Directly relevant to TutorConnect's frontend.`
+  },
+  {
+    num: "Part 3",
+    title: "Node.js & Express",
+    desc: "Building REST APIs, middleware, MongoDB",
+    hours: "15–20h",
+    must: true,
+    note: `You already know a lot of this from your projects! Still worth doing for <span class="note-keyword">structured patterns</span>, deployment to Fly.io/Render, and env variables best practices.`
+  },
+  {
+    num: "Part 4",
+    title: "Testing & User Administration",
+    desc: "Jest, supertest, bcrypt, JWT auth",
+    hours: "15–20h",
+    must: true,
+    note: `Backend testing with <span class="note-keyword">Jest + supertest</span>, and implementing proper <span class="note-keyword">JWT auth with bcrypt</span>. You've done JWT before — this will solidify the patterns.`
+  },
+  {
+    num: "Part 5",
+    title: "Testing React Apps",
+    desc: "React Testing Library, Playwright, E2E tests",
+    hours: "15–20h",
+    must: true,
+    note: `Testing the frontend with <span class="note-keyword">React Testing Library</span> and end-to-end tests with Playwright. Expected in professional codebases.`
+  },
+  {
+    num: "Part 9",
+    title: "TypeScript",
+    desc: "Types, interfaces, typed React & Express",
+    hours: "15–20h",
+    must: true,
+    note: `Most companies use <span class="note-keyword">TypeScript</span>, not plain JS. This part covers typing your React components and Express routes. Do this before job hunting.`
+  },
+  {
+    num: "Part 6",
+    title: "Advanced State Management",
+    desc: "Redux, React Query, useReducer",
+    hours: "15–20h",
+    must: false,
+    note: `<span class="note-keyword">Redux</span> is useful but only really needed for large apps with complex global state. React Query is worth knowing. Learn on the job when you hit the pain point.`
+  },
+  {
+    num: "Part 7",
+    title: "React Router, Custom Hooks, CSS",
+    desc: "Routing, hooks patterns, Webpack, styling",
+    hours: "15–20h",
+    must: false,
+    note: `<span class="note-keyword">React Router</span> is very common — consider at least skimming this part. Webpack config and custom hooks are nice-to-have but not day-1 critical.`
+  },
+  {
+    num: "Part 8",
+    title: "GraphQL",
+    desc: "Apollo, queries, mutations, subscriptions",
+    hours: "15–20h",
+    must: false,
+    note: `<span class="note-keyword">GraphQL</span> is a powerful alternative to REST but most companies still use REST. Good to know it exists and learn it when a job requires it.`
+  },
+  {
+    num: "Part 10",
+    title: "React Native",
+    desc: "Mobile apps with React Native & Expo",
+    hours: "15–20h",
+    must: false,
+    note: `Only if you want to go into <span class="note-keyword">mobile development</span>. You already use Expo for TutorConnect — so you actually have a head start here if you ever need it.`
+  },
+  {
+    num: "Part 11",
+    title: "CI/CD",
+    desc: "GitHub Actions, deployment pipelines, versioning",
+    hours: "10–15h",
+    must: false,
+    note: `<span class="note-keyword">Continuous Integration / Deployment</span> pipelines. You'll learn this naturally once you join a team. Not required to get the job.`
+  },
+  {
+    num: "Part 12",
+    title: "Containers",
+    desc: "Docker, docker-compose, containerization",
+    hours: "10–15h",
+    must: false,
+    note: `<span class="note-keyword">Docker</span> is valuable and becoming more expected, but usually not required at junior level. Learn once you're hired or when you have time.`
+  },
+  {
+    num: "Part 13",
+    title: "Using Relational Databases",
+    desc: "PostgreSQL, Sequelize ORM, SQL queries",
+    hours: "10–15h",
+    must: false,
+    note: `<span class="note-keyword">PostgreSQL + SQL</span> is very worth knowing — relational DBs are everywhere. But learn it separately or on the job; you don't need to finish this course to learn SQL.`
+  }
+];
+
+const TOTAL_PARTS = parts.length;
+let completed = JSON.parse(localStorage.getItem('fso-completed') || '[]');
+
+function renderParts() {
+  const mustGrid = document.getElementById('must-grid');
+  const laterGrid = document.getElementById('later-grid');
+  mustGrid.innerHTML = '';
+  laterGrid.innerHTML = '';
+
+  parts.forEach((part, idx) => {
+    const isDone = completed.includes(idx);
+    const card = document.createElement('div');
+    card.className = 'part-card' + (isDone ? ' done' : '');
+    card.innerHTML = `
+      <div class="part-main" onclick="toggleDone(${idx}, event)">
+        <div class="checkbox">
+          <svg class="checkmark" viewBox="0 0 10 7" fill="none">
+            <path d="M1 3.5L3.5 6L9 1" stroke="#0a0a0f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="part-number">${part.num}</div>
+        <div class="part-info">
+          <div class="part-title">${part.title}</div>
+          <div class="part-desc">${part.desc}</div>
+        </div>
+        <div class="part-meta">
+          <span class="hours-tag">${part.hours}</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="color:var(--muted);flex-shrink:0" onclick="toggleNote(${idx}, event)">
+            <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M7 6.5V10M7 4.5V5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="part-notes" id="note-${idx}">${part.note}</div>
+    `;
+    (part.must ? mustGrid : laterGrid).appendChild(card);
+  });
+
+  updateStats();
+}
+
+function toggleDone(idx, e) {
+  if (e.target.closest('svg:last-child')) return;
+  if (completed.includes(idx)) {
+    completed = completed.filter(i => i !== idx);
+  } else {
+    completed.push(idx);
+  }
+  localStorage.setItem('fso-completed', JSON.stringify(completed));
+  renderParts();
+}
+
+function toggleNote(idx, e) {
+  e.stopPropagation();
+  const note = document.getElementById('note-' + idx);
+  note.classList.toggle('show');
+}
+
+function updateStats() {
+  const doneCount = completed.length;
+  const doneHrs = completed.reduce((sum, idx) => {
+    const h = parts[idx].hours;
+    const avg = (parseInt(h) + parseInt(h.split('–')[1])) / 2;
+    return sum + avg;
+  }, 0);
+  const pct = Math.round((doneCount / TOTAL_PARTS) * 100);
+
+  document.getElementById('stat-done').textContent = doneCount;
+  document.getElementById('stat-hrs').textContent = Math.round(doneHrs) + 'h';
+  document.getElementById('progress-pct').textContent = pct + '%';
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+renderParts();
+</script>
+</body>
+</html>
